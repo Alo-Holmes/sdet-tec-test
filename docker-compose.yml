@@ -33,7 +33,7 @@ services:
       - minimart-network
 
   database:
-    image: mysql:8.4.3
+    image: mysql:8.0
     container_name: minimart-database
     ports:
       - "3307:3306"

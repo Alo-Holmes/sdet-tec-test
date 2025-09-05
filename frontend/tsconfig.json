@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "lib": ["es6", "dom"],
+    "types": ["cypress"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true
+  },
+  "include": [
+    "tests/**/*.js",
+    "tests/**/*.ts",
+    "tests/**/*.d.ts"
+  ]
+}

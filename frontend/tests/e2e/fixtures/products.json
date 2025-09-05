@@ -1,0 +1,19 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Red T-Shirt",
+      "price": 199.99
+    },
+    {
+      "id": 2,
+      "name": "Blue Sneakers",
+      "price": 899.99
+    },
+    {
+      "id": 3,
+      "name": "Green Hat",
+      "price": 149.99
+    }
+  ]
+}
