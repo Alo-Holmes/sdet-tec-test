@@ -20,6 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             mainElement.innerHTML = ''; // Clear existing content
 
+            if (products.length === 0) {
+                mainElement.innerHTML = '<p>No products found.</p>';
+                return;
+            }
+
             products.forEach(product => {
                 const productCard = document.createElement('a');
                 productCard.href = `product.html?id=${product.id}`;
