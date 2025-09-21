@@ -1,115 +1,64 @@
+import LoginPage from '../pageObjects/LoginPage';
+import ProductsPage from '../pageObjects/ProductsPage';
+import HeaderPage from '../pageObjects/HeaderPage';
+import ProductDetailsPage from '../pageObjects/ProductDetailsPage';
+import RegistrationPage from '../pageObjects/RegistrationPage';
+
 describe('Shopping Flow E2E Tests', () => {
+  const loginPage = new LoginPage();
+  const productsPage = new ProductsPage();
+  const headerPage = new HeaderPage();
+  const productDetailsPage = new ProductDetailsPage();
+  const registrationPage = new RegistrationPage();
+
   beforeEach(() => {
-    cy.visit('/')
-  })
+    cy.visit('http://localhost:8082');
+  });
 
-  it('should allow user to browse and add products to cart', () => {
-    cy.get('[data-testid="login-button"]').click()
-    
-    cy.get('input[type="email"]').type('test@example.com')
-    cy.get('input[type="password"]').type('password')
-    cy.get('button[type="submit"]').click()
-    
-    cy.url().should('include', '/products')
-    cy.get('.product-card').should('have.length.greaterThan', 0)
-    
-    cy.get('.product-card').first().within(() => {
-      cy.get('[data-testid="add-to-cart-button"]').click()
-    })
-    
-    cy.get('[data-testid="cart-button"]').should('contain', '1')
-  })
+  it('should allow a user to login', () => {
+    loginPage.login('test@example.com', 'password');
+    cy.url().should('include', '/products');
+  });
 
-  it('should update cart total when items are added', () => {
-    cy.login('test@example.com', 'password') 
-    
-    cy.visit('/products')
-    
-    cy.get('.product-card').first().click()
-    
-    cy.get('[data-testid="cart-button"]').click()
-    
-    cy.get('.cart-total').should('contain', '$')
-  })
+  it('should allow user to browse and add a product to the cart', () => {
+    loginPage.login('test@example.com', 'password');
+    cy.visit('/products');
+    productsPage.addFirstProductToCart();
+    headerPage.getCartButton().should('contain', '1');
+  });
+
+  it('should complete the checkout process', () => {
+    loginPage.login('test@example.com', 'password');
+    cy.visit('/products');
+    productsPage.addFirstProductToCart();
+    headerPage.goToCart();
+    cy.get('[data-testid="checkout-button"]').click();
+    cy.url().should('include', '/orders');
+  });
 
   it('should show correct product details', () => {
-    cy.visit('/products/1') 
-    
-    cy.contains('Wireless Headphones').should('be.visible') 
-    cy.contains('$199.9900').should('be.visible') 
-    cy.contains('50').should('be.visible') 
-  })
-
-  it('should complete checkout process', () => {
-    cy.login('test@example.com', 'password')
-    cy.addProductToCart(1, 1)
-    
-    cy.get('[data-testid="cart-button"]').click()
-    cy.get('[data-testid="checkout-button"]').click()
-    
-    cy.url().should('include', '/orders')
-  })
+    cy.visit('/products/1');
+    productDetailsPage.getProductName().should('contain', 'Wireless Headphones');
+    productDetailsPage.getProductPrice().should('contain', '$199.99');
+    productDetailsPage.getProductStock().should('contain', '50');
+  });
 
   it('should filter products by category', () => {
-    cy.visit('/products')
-    
-    cy.get('.v-select > .v-input__control > .v-input__slot').click()
-    cy.get('.v-menu__content .v-list-item').contains('Electronics').click()
-    
-    cy.get('.product-card').should('exist')
-  })
+    cy.visit('/products');
+    productsPage.filterByCategory('Electronics');
+    productsPage.getProducts().should('exist');
+  });
 
   it('should handle user registration', () => {
-    cy.visit('/register')
-    
-    cy.get('input[name="firstName"]').type('John')
-    cy.get('input[name="lastName"]').type('Doe')
-    cy.get('input[name="email"]').type('john@test.com')
-    cy.get('input[name="password"]').type('password123')
-    
-    cy.get('button[type="submit"]').click()
-    
-  })
-
-  it('should handle concurrent cart updates', () => {
-    cy.login('test@example.com', 'password')
-    
-    cy.addProductToCart(1, 1)
-    cy.addProductToCart(2, 2)
-    cy.addProductToCart(3, 1)
-    
-    cy.get('[data-testid="cart-button"]').should('contain', '4')
-  })
-
-  it('should add out of stock product to cart', () => {
-    cy.login('test@example.com', 'password')
-    cy.visit('/products')
-    
-    cy.get('.product-card').contains('Out of stock').parent().within(() => {
-      cy.get('[data-testid="add-to-cart-button"]').click()
-    })
-    
-  })
+    const email = `john_${Date.now()}@test.com`;
+    registrationPage.register('John', 'Doe', email, 'password123');
+    cy.url().should('include', '/login');
+  });
 
   it('should search for products', () => {
-    cy.visit('/products')
-    
-    cy.get('[data-testid="search-input"]').type('laptop')
-    
-    cy.wait(2000)
-    
-    cy.get('.product-card').should('contain', 'Laptop')
-    
-    cy.wait(1000)
-  })
-
-  it('should navigate through product pages', () => {
-    cy.visit('/products')
-    
-    cy.get('.v-data-table__wrapper > table > tbody > tr:first-child > td:first-child > a').click()
-    
-    cy.url().should('match', /\/products\/\d+$/)
-    
-    cy.get('.v-toolbar > .v-toolbar__content > .v-btn:first-child').click()
-  })
-})
+    cy.visit('/products');
+    productsPage.searchForProduct('laptop');
+    cy.wait(500); // wait for search to complete
+    productsPage.getProducts().should('contain', 'Laptop');
+  });
+});

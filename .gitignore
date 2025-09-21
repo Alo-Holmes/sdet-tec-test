@@ -17,3 +17,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+# Ignore node_modules everywhere
+node_modules/
+
+# Ignore nested e2e node_modules
+e2e/node_modules/

@@ -14,6 +14,10 @@ class CartService
 
     public function addToCart(int $userId, int $productId, int $quantity): array
     {
+        if ($quantity <= 0) {
+            throw new \InvalidArgumentException('Quantity must be a positive integer.');
+        }
+
         $existingItem = $this->connection->fetchAssociative(
             'SELECT * FROM cart WHERE user_id = ? AND product_id = ?',
             [$userId, $productId]

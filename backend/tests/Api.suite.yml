@@ -7,5 +7,4 @@ modules:
             depends: Symfony
         - Symfony:
             app_path: 'src'
-        - \App\Tests\Support\Helper\Api
     step_decorators: ~

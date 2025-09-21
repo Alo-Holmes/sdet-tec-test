@@ -16,13 +16,19 @@ class CartServiceTest extends TestCase
         $this->connectionMock = $this->createMock(Connection::class);
         $this->cartService = new CartService($this->connectionMock);
     }
+
+    /**
+     * Test that a new item is created in the cart if it does not already exist.
+     */
     public function testAddToCartCreatesNewItemWhenNotExists()
     {
+        // Mock the database connection to simulate that the item does not exist in the cart.
         $this->connectionMock
             ->expects($this->once())
             ->method('fetchAssociative')
             ->willReturn(false);
 
+        // Expect that an INSERT statement is executed once.
         $this->connectionMock
             ->expects($this->once())
             ->method('executeStatement')
@@ -33,47 +39,58 @@ class CartServiceTest extends TestCase
 
         $result = $this->cartService->addToCart(1, 123, 2);
         
+        // Assert that the operation was successful and the correct message is returned.
         $this->assertTrue($result['success']);
         $this->assertEquals('Item added to cart', $result['message']);
     }
-    public function testAddToCartWithNegativeQuantity()
+
+    /**
+     * Test that adding an item with a negative quantity should fail.
+     * The application should not allow adding items with negative quantities.
+     */
+    public function testAddToCartWithNegativeQuantityShouldFail()
     {
-        $this->connectionMock
-            ->expects($this->once())
-            ->method('fetchAssociative')
-            ->willReturn(false);
+        // We expect an exception to be thrown when a negative quantity is used.
+        $this->expectException(\InvalidArgumentException::class);
 
-        $this->connectionMock
-            ->expects($this->once())
-            ->method('executeStatement');
-
-        $result = $this->cartService->addToCart(1, 123, -5);
-        
-        $this->assertTrue($result['success']);
+        // This call should throw an exception, so the test will pass if it does.
+        $this->cartService->addToCart(1, 123, -5);
     }
-    public function testCalculateCartTotalWithTax()
+
+    /**
+     * Test the calculation of the cart total, including subtotal, tax, and total.
+     */
+    public function testCalculateCartTotalWithSubtotalAndTax()
     {
+        // Define a set of cart items with prices and quantities.
         $cartItems = [
-            ['price' => '10.00', 'quantity' => 2],
-            ['price' => '5.00', 'quantity' => 1]
+            ['price' => '19.99', 'quantity' => 1], // 19.99
+            ['price' => '45.99', 'quantity' => 2]  // 91.98
         ];
 
-        $cartServiceMock = $this->createMock(CartService::class);
-        $cartServiceMock
-            ->expects($this->once())
-            ->method('calculateCartTotal')
-            ->willReturn(['subtotal' => 25.00, 'tax' => 2.00, 'total' => 27.00]);
+        // Subtotal = 19.99 + 91.98 = 111.97
+        // Tax (8.5%) = 111.97 * 0.085 = 9.51745
+        // Total = 111.97 + 9.51745 = 121.48745
 
-        $result = $cartServiceMock->calculateCartTotal($cartItems);
+        $result = $this->cartService->calculateCartTotal($cartItems);
         
-        $this->assertEquals(2.00, $result['tax']);
+        // Assert that the calculated subtotal, tax, and total are correct, rounded to 2 decimal places.
+        $this->assertEquals(111.97, $result['subtotal']);
+        $this->assertEquals(9.52, $result['tax']);
+        $this->assertEquals(121.49, $result['total']);
     }
+
+    /**
+     * Test that the cart items for a specific user are fetched correctly.
+     */
     public function testGetCartItems()
     {
+        // Define the expected items to be returned from the database.
         $expectedItems = [
             ['id' => 1, 'product_id' => 123, 'quantity' => 2, 'name' => 'Test Product']
         ];
 
+        // Mock the database connection to return the expected items.
         $this->connectionMock
             ->expects($this->once())
             ->method('fetchAllAssociative')
@@ -81,35 +98,37 @@ class CartServiceTest extends TestCase
 
         $result = $this->cartService->getCartItems(1);
         
+        // Assert that the returned items match the expected items.
         $this->assertEquals($expectedItems, $result);
     }
-    public function testCartTotalCalculationWithFixedValues()
-    {
-        $cartItems = [
-            ['price' => '19.99', 'quantity' => 1],
-            ['price' => '45.99', 'quantity' => 2]
-        ];
 
-        $result = $this->cartService->calculateCartTotal($cartItems);
-        
-        $this->assertEquals(111.97, $result['subtotal']);
-        $this->assertEquals(111.97 + 0.08, $result['tax']);
-    }
+    /**
+     * Test that the timestamp of a cart item is updated correctly.
+     */
     public function testUpdateCartItemTimestamp()
     {
+        // Expect that an UPDATE statement is executed once.
         $this->connectionMock
+            ->expects($this->once())
             ->method('executeStatement')
+            ->with(
+                'UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND product_id = ?',
+                [5, 1, 123]
+            )
             ->willReturn(1);
 
-        $beforeTime = time();
         $result = $this->cartService->updateCartItem(1, 123, 5);
-        $afterTime = time();
         
-        $this->assertTrue($beforeTime <= $afterTime);
+        // Assert that the operation was successful.
         $this->assertTrue($result['success']);
     }
+
+    /**
+     * Test that the cart is cleared for a specific user.
+     */
     public function testClearCart()
     {
+        // Expect that a DELETE statement is executed once.
         $this->connectionMock
             ->expects($this->once())
             ->method('executeStatement')
