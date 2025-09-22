@@ -1,6 +1,0 @@
-framework:
-    secret: '%env(APP_SECRET)%'
-    serializer:
-        enabled: true
-    property_info:
-        enabled: true
